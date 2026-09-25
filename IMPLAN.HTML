@@ -76,7 +76,7 @@
             gap: 15px;
         }
 
-        .print-btn, .toggle-all-btn {
+        .toggle-all-btn {
             border: 1px solid rgba(240,246,252,0.1);
             color: #ffffff;
             padding: 8px 18px;
@@ -91,9 +91,6 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
-        .print-btn { background-color: #238636; }
-        .print-btn:hover { background-color: #2ea44f; }
-        
         .toggle-all-btn { background-color: #388bfd; }
         .toggle-all-btn:hover { background-color: #58a6ff; }
 
@@ -226,20 +223,6 @@
         .meta-info span { background-color: #21262d; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border-color); }
         #no-results-msg { text-align: center; font-size: 1.2rem; color: #8b949e; margin-top: 40px; display: none; }
 
-        @media print {
-            body, html { background: #ffffff !important; color: #000000 !important; font-size: 12pt; }
-            header, .search-container, .actions-container, #inspector-panel, .brigade-title::before, [style*="dashed"], [style*="border-bottom:1px dashed"] { display: none !important; }
-            .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
-            .division-grid { display: block !important; }
-            .division-block { background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 30px; page-break-inside: avoid; }
-            .div-1-title, .div-3-title, .div-spec-title { color: #000000 !important; border-bottom: 2px solid #000000 !important; font-size: 16pt !important; margin-bottom: 15px; }
-            .brigade-section { margin-top: 15px !important; page-break-inside: avoid; }
-            .brigade-title { background: #f6f8fa !important; color: #000000 !important; border: 1px solid #d0d7de !important; padding: 6px 10px !important; font-size: 12pt !important; }
-            .accordion-content { max-height: none !important; overflow: visible !important; }
-            .labels-flex { display: flex !important; border-left: 2px solid #d0d7de !important; }
-            .unit-label { background: #ffffff !important; border: 1px solid #d0d7de !important; color: #000000 !important; box-shadow: none !important; flex: 1 1 100% !important; padding: 6px 12px !important; margin-bottom: 4px; }
-            .location-tag { color: #000000 !important; background: #f0f0f0 !important; border: 1px solid #000000 !important; padding: 3px 8px !important; font-weight: bold !important; }
-        }
     </style>
 </head>
 <body>
@@ -254,7 +237,6 @@
 
         <div class="actions-container">
             <button class="toggle-all-btn" id="toggle-all-accordions">↕️ Déplier / Replier Tout</button>
-            <button class="print-btn" id="print-tactical-report">🖨️ Imprimer la situation filtrée</button>
         </div>
     </header>
 
