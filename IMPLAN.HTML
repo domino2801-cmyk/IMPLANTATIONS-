@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord Tactique Global - Armée de Terre</title>
+    <style>
+        :root {
+            --bg-main: #0c0f12;
+            --bg-card: #161b22;
+            --bg-header: #1f2631;
+            --border-color: #30363d;
+            --text-main: #c9d1d9;
+            --neon-blue: #00d2ff;
+            --neon-red: #ff3838;
+            --neon-purple: #d300ff;
+            --neon-orange: #ffaa00;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+        }
+
+        header {
+            background-color: var(--bg-header);
+            padding: 20px;
+            border-bottom: 2px solid var(--border-color);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.6rem;
+            letter-spacing: 1px;
+            color: #ffffff;
+        }
+
+        header p {
+            margin: 5px 0 0 0;
+            font-size: 0.9rem;
+            color: #8b949e;
+        }
+
+        .search-container {
+            max-width: 600px;
+            margin: 20px auto 0 auto;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            background-color: #0c0f12;
+            border: 2px solid var(--border-color);
+            border-radius: 30px;
+            color: #ffffff;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+        }
+
+        .actions-container {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .print-btn, .toggle-all-btn {
+            border: 1px solid rgba(240,246,252,0.1);
+            color: #ffffff;
+            padding: 8px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .print-btn { background-color: #238636; }
+        .print-btn:hover { background-color: #2ea44f; }
+        
+        .toggle-all-btn { background-color: #388bfd; }
+        .toggle-all-btn:hover { background-color: #58a6ff; }
+
+        .container {
+            max-width: 1900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .division-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.3fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 1400px) {
+            .division-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .division-block {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            height: fit-content;
+        }
+
+        .div-1-title { color: var(--neon-blue); border-bottom: 2px solid var(--neon-blue); padding-bottom: 8px; margin-top: 0; font-size: 1.3rem; }
+        .div-3-title { color: var(--neon-red); border-bottom: 2px solid var(--neon-red); padding-bottom: 8px; margin-top: 0; font-size: 1.3rem; }
+        .div-spec-title { color: var(--neon-purple); border-bottom: 2px solid var(--neon-purple); padding-bottom: 8px; margin-top: 0; font-size: 1.3rem; }
+
+        .brigade-section { margin-top: 25px; }
+
+        .brigade-title {
+            font-size: 1.05rem;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            background-color: #21262d;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .brigade-title:hover { background-color: #30363d; border-color: #8b949e; }
+
+        .brigade-title::before {
+            content: "▶";
+            display: inline-block;
+            margin-right: 10px;
+            font-size: 0.8rem;
+            color: var(--neon-blue);
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .division-block[id="block-div3"] .brigade-title::before { color: var(--neon-red); }
+        .division-block[id="block-divspec"] .brigade-title::before { color: var(--neon-purple); }
+
+        .brigade-section.expanded .brigade-title::before { transform: rotate(90deg); }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .labels-flex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            padding: 5px;
+            border-left: 2px dashed var(--border-color);
+            padding-left: 10px;
+        }
+
+        .unit-label {
+            background-color: #21262d;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            font-size: 0.88rem;
+            flex: 1 1 calc(50% - 10px);
+            min-width: 280px;
+            box-sizing: border-box;
+        }
+
+        .unit-label:hover { border-color: #8b949e; transform: translateY(-2px); background-color: #30363d; }
+        .unit-label.active-blue { border-color: var(--neon-blue); box-shadow: 0 0 8px rgba(0, 210, 255, 0.4); }
+        .unit-label.active-red { border-color: var(--neon-red); box-shadow: 0 0 8px rgba(255, 56, 56, 0.4); }
+        .unit-label.active-purple { border-color: var(--neon-purple); box-shadow: 0 0 8px rgba(211, 0, 255, 0.4); }
+
+        .location-tag {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-left: auto;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .unit-label[data-div="1"] .location-tag { color: #58a6ff; background-color: rgba(56, 139, 253, 0.15); border: 1px solid rgba(56, 139, 253, 0.4); box-shadow: inset 0 0 4px rgba(56, 139, 253, 0.2); }
+        .unit-label[data-div="1"]:hover .location-tag { color: #ffffff; background-color: rgba(56, 139, 253, 0.35); border-color: #58a6ff; box-shadow: 0 0 8px rgba(56, 139, 253, 0.5); }
+
+        .unit-label[data-div="3"] .location-tag { color: #ff7b72; background-color: rgba(248, 81, 73, 0.15); border: 1px solid rgba(248, 81, 73, 0.4); box-shadow: inset 0 0 4px rgba(248, 81, 73, 0.2); }
+        .unit-label[data-div="3"]:hover .location-tag { color: #ffffff; background-color: rgba(248, 81, 73, 0.35); border-color: #ff7b72; box-shadow: 0 0 8px rgba(248, 81, 73, 0.5); }
+
+        .unit-label[data-div="spec"] .location-tag { color: #d300ff; background-color: rgba(211, 0, 255, 0.15); border: 1px solid rgba(211, 0, 255, 0.4); box-shadow: inset 0 0 4px rgba(211, 0, 255, 0.2); }
+        .unit-label[data-div="spec"]:hover .location-tag { color: #ffffff; background-color: rgba(211, 0, 255, 0.35); border-color: #d300ff; box-shadow: 0 0 8px rgba(211, 0, 255, 0.5); }
+
+        #inspector-panel { margin-top: 25px; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        #inspector-panel h3 { margin-top: 0; font-size: 1.3rem; }
+        .meta-info { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0 15px 0; font-size: 0.85rem; }
+        .meta-info span { background-color: #21262d; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border-color); }
+        #no-results-msg { text-align: center; font-size: 1.2rem; color: #8b949e; margin-top: 40px; display: none; }
+
+        @media print {
+            body, html { background: #ffffff !important; color: #000000 !important; font-size: 12pt; }
+            header, .search-container, .actions-container, #inspector-panel, .brigade-title::before, [style*="dashed"], [style*="border-bottom:1px dashed"] { display: none !important; }
+            .container { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            .division-grid { display: block !important; }
+            .division-block { background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 30px; page-break-inside: avoid; }
+            .div-1-title, .div-3-title, .div-spec-title { color: #000000 !important; border-bottom: 2px solid #000000 !important; font-size: 16pt !important; margin-bottom: 15px; }
+            .brigade-section { margin-top: 15px !important; page-break-inside: avoid; }
+            .brigade-title { background: #f6f8fa !important; color: #000000 !important; border: 1px solid #d0d7de !important; padding: 6px 10px !important; font-size: 12pt !important; }
+            .accordion-content { max-height: none !important; overflow: visible !important; }
+            .labels-flex { display: flex !important; border-left: 2px solid #d0d7de !important; }
+            .unit-label { background: #ffffff !important; border: 1px solid #d0d7de !important; color: #000000 !important; box-shadow: none !important; flex: 1 1 100% !important; padding: 6px 12px !important; margin-bottom: 4px; }
+            .location-tag { color: #000000 !important; background: #f0f0f0 !important; border: 1px solid #000000 !important; padding: 3px 8px !important; font-weight: bold !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📋 Organigramme Tactique Global - Armée de Terre</h1>
+        <p>Forces Interarmes & Commandements d'Appui Spécialisés. Recherche globale en temps réel.</p>
+        
+        <div class="search-container">
+            <input type="text" id="search-bar" class="search-input" placeholder="🔍 Rechercher un régiment, une ville, un matériel (CAESAR, Tigre, Cyber, Leclerc)...">
+        </div>
+
+        <div class="actions-container">
+            <button class="toggle-all-btn" id="toggle-all-accordions">↕️ Déplier / Replier Tout</button>
+            <button class="print-btn" id="print-tactical-report">🖨️ Imprimer la situation filtrée</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- =========================================================================
+             HAUTE AUTORITÉ : BARRE DE COMMANDEMENT CFOT / COMSECFOT
+             ========================================================================= -->
+        <div style="display: flex; gap: 20px; margin-bottom: 25px; flex-wrap: wrap;">
+            <!-- Bloc Principal CFOT -->
+            <div style="flex: 2 1 600px; background-color: #1f2631; border: 2px solid var(--neon-blue); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--neon-blue); padding-bottom: 10px; margin-bottom: 15px;">
+                    <h2 style="margin: 0; font-size: 1.4rem; color: #ffffff; letter-spacing: 0.5px;">🎖️ CFOT (Commandement de la Force Opérationnelle Terrestre)</h2>
+                    <span class="location-tag" style="color: #00d2ff; background-color: rgba(0, 210, 255, 0.15); border: 1px solid rgba(0, 210, 255, 0.4);">CONSTITUÉ À LILLE</span>
+                </div>
+                <p style="margin: 0; font-size: 0.9rem; color: #8b949e; line-height: 1.5;">
+                    Générateur de la puissance opérationnelle aéroterrestre. Le CFOT prépare, entraîne et projette les forces de l'armée de Terre en opérations extérieures et sur le territoire national.
+                </p>
+            </div>
+
+            <!-- Bloc Jumelé COMSECFOT -->
+            <div style="flex: 1 1 300px; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #fa5252; padding-bottom: 10px; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 1.1rem; color: #ffffff;">🤝 COMSECFOT</h3>
+                    <span class="location-tag" style="color: #fa5252; background-color: rgba(250, 82, 82, 0.15); border: 1px solid rgba(250, 82, 82, 0.4);">LILLE</span>
+                </div>
+                <p style="margin: 0; font-size: 0.85rem; color: #8b949e; line-height: 1.4;">
+                    Commandement du Secrétariat de la Force Opérationnelle Terrestre. Assure l'administration générale, le soutien technique et la coordination opérationnelle de l'échelon de commandement.
+                </p>
+            </div>
+        </div>
+
+        <div id="inspector-panel">
+            <h3 id="inspect-name">Nom de l'unité</h3>
+            <div class="meta-info">
+                <span id="inspect-div">Division</span>
+                <span id="inspect-org">Brigade</span>
+                <span id="inspect-loc">Garnison</span>
+            </div>
+            <p id="inspect-desc" style="line-height: 1.5; color: #e6edf3;"></p>
+        </div>
+
+        <div id="no-results-msg">❌ Aucun régiment ou garnison ne correspond à vos critères de recherche.</div>
+
+        <!-- =========================================================================
+             ÉCHELON SUPÉRIEUR : LES 3 GRANDS CORPS D'ARMÉE TACTIQUES (À PLAT)
+             ========================================================================= -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            
+            <!-- 1. LE 1ER CORPS D'ARMÉE -->
+            <div style="background-color: var(--bg-card); border: 2px solid var(--neon-blue); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--neon-blue); padding-bottom: 10px; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 1.15rem; color: #ffffff;">🔱 QG 1er CA (1er Corps d'Armée)</h3>
+                    <span class="location-tag" style="color: #00d2ff; background-color: rgba(0, 210, 255, 0.15); border: 1px solid rgba(0, 210, 255, 0.4);">LILLE</span>
+                </div>
+                <p style="margin: 0 0 15px 0; font-size: 0.88rem; color: #8b949e; line-height: 1.4;">
+                    État-major multinational interarmes répondant aux normes OTAN. Capable de commander une force terrestre jusqu'à 5 divisions (120 000 soldats) en haute intensité. Traduit en anglais par 1 French Corps.
+                </p>
+                <div class="labels-flex" id="container-1ca" style="margin: 0; padding: 0; border: none;"></div>
+            </div>
+
+            <!-- 2. LE COMMANDEMENT TERRE EUROPE -->
+            <div style="background-color: var(--bg-card); border: 2px solid var(--neon-red); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--neon-red); padding-bottom: 10px; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 1.15rem; color: #ffffff;">🌍 CTE (Commandement Terre Europe)</h3>
+                    <span class="location-tag" style="color: #ff7b72; background-color: rgba(248, 81, 73, 0.15); border: 1px solid rgba(248, 81, 73, 0.4);">LILLE</span>
+                </div>
+                <p style="margin: 0 0 15px 0; font-size: 0.88rem; color: #8b949e; line-height: 1.4;">
+                    Renforce la cohérence et la réactivité des déploiements opérationnels en Europe. Interlocuteur de l'OTAN et de l'UE pour les sujets à dominante terrestre sur la zone Europe.
+                </p>
+                <div class="labels-flex" id="container-cte" style="margin: 0; padding: 0; border: none;"></div>
+            </div>
+
+            <!-- 3. LE CORPS EUROPÉEN -->
+            <div style="background-color: var(--bg-card); border: 2px solid #ffaa00; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ffaa00; padding-bottom: 10px; margin-bottom: 15px;">
+                    <h3 style="margin: 0; font-size: 1.15rem; color: #ffffff;">🇪🇺 Eurocorps (Corps Européen)</h3>
+                    <span class="location-tag" style="color: #ffaa00; background-color: rgba(255, 170, 0, 0.15); border: 1px solid rgba(255, 170, 0, 0.4);">STRASBOURG</span>
+                </div>
+                <p style="margin: 0 0 15px 0; font-size: 0.88rem; color: #8b949e; line-height: 1.4;">
+                    Structure de commandement multinationale de niveau corps d'armée regroupant 11 nations cadres et partenaires. Autonome et projetable au profit de l'UE et de l'OTAN (jusqu'à 65 000 militaires).
+                </p>
+                <div class="labels-flex" id="container-euro" style="margin: 0; padding: 0; border: none;"></div>
+            </div>
+
+        </div>
+
+        <!-- Grille principale de vos Divisions / Commandements d'Appui -->
+        <div class="division-grid" id="main-grid">
+            <div class="division-block" id="block-div1">
+                <h2 class="div-1-title">🟦 1re Division (Interarmes)</h2>
+                <div class="brigade-section" id="sec-7eme-bb">
+                    <div class="brigade-title">🔸 7e Brigade Blindée (Besançon)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-7bb"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-9eme-bima">
+                    <div class="brigade-title">🔸 9e Brigade d'Infanterie de Marine (Poitiers)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-9bima"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-27eme-bim">
+                    <div class="brigade-title">🔸 27e Brigade d'Infanterie de Montagne (Varces)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-27bim"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-bfa">
+                    <div class="brigade-title">🔸 Brigade Franco-Allemande (Müllheim)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-bfa"></div></div>
+                </div>
+            </div>
+
+            <div class="division-block" id="block-div3">
+                <h2 class="div-3-title">🟥 3e Division (Interarmes)</h2>
+                <div class="brigade-section" id="sec-11eme-bp">
+                    <div class="brigade-title">🔸 11e Brigade Parachutiste (Toulouse)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-11bp"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-6eme-blb">
+                    <div class="brigade-title">🔸 6e Brigade Légère Blindée (Nîmes)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-6blb"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-2eme-bb">
+                    <div class="brigade-title">🔸 2e Brigade Blindée (Illkirch-Graffenstaden)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-2bb"></div></div>
+                </div>
+            </div>
+
+            <!-- 🟪 COLONNE 3 : COMMANDEMENTS SPÉCIALISÉS (ACCORDÉONS SIMPLES À PLAT) -->
+            <div class="division-block" id="block-divspec">
+                <h2 class="div-spec-title">🟪 Commandements Spécialisés</h2>
+                
+                <div style="margin-top:15px; padding-bottom:5px; border-bottom:1px dashed #444; color:#fff; font-size:0.9rem; font-weight:bold; letter-spacing:0.5px;">⚡ CAPR (Appui & Puissance)</div>
+                <div class="brigade-section" id="sec-brce">
+                    <div class="brigade-title">🔹 BRCE (Renseignement & Cyber-Élec - Strasbourg)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-brce"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-4bac">
+                    <div class="brigade-title">🔹 4e BAC (Aérocombat - Clermont-Ferrand)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-4bac"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-bart">
+                    <div class="brigade-title">🔹 BART (Artillerie - La Valbonne)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-bart"></div></div>
+                </div>
+
+                <div style="margin-top:25px; padding-bottom:5px; border-bottom:1px dashed #444; color:#fff; font-size:0.9rem; font-weight:bold; letter-spacing:0.5px;">📦 CALT (Appui Logistique Tactique)</div>
+                <div class="brigade-section" id="sec-bgen">
+                    <div class="brigade-title">🔹 BGEN (Génie - Angers)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-bgen"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-blog">
+                    <div class="brigade-title">🔹 BLOG (Logistique - Toulouse)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-blog"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-bmaint">
+                    <div class="brigade-title">🔹 BMAINT (Maintenance - Versailles)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-bmaint"></div></div>
+                </div>
+
+                <div style="margin-top:25px; padding-bottom:5px; border-bottom:1px dashed #444; color:#fff; font-size:0.9rem; font-weight:bold; letter-spacing:0.5px;">🌐 CATNC (Numérique & Transmissions)</div>
+                <div class="brigade-section" id="sec-banc">
+                    <div class="brigade-title">🔹 BANC (Appui Numérique & Cyber - Rennes)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-banc"></div></div>
+                </div>
+
+                <div style="margin-top:25px; padding-bottom:5px; border-bottom:1px dashed #444; color:#fff; font-size:0.9rem; font-weight:bold; letter-spacing:0.5px;">⚔️ Forces Spéciales & Formation</div>
+                <div class="brigade-section" id="sec-cast">
+                    <div class="brigade-title">🔹 CAST (Actions Spéciales Terrestres - Pau)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-cast"></div></div>
+                </div>
+                <div class="brigade-section" id="sec-comecia">
+                    <div class="brigade-title">🔹 COMECIA (Entraînement Interarmes - Mourmelon)</div>
+                    <div class="accordion-content"><div class="labels-flex" id="container-comecia"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const unitsData = [
+            // =========================================================================
+            // --- HAUTS ÉCHELONS DE CORPS D'ARMÉE ET DE THÉÂTRE (EXTRAITS IMAGES) ---
+            // =========================================================================
+            { name: "EM QG 1er CA", org: "1ER CA", div: "1", location: "Lille", desc: "Quartier général multinational de corps d'armée certifié par l'Alliance (normes OTAN). En mesure d'engager en premier et commander des opérations d'envergure interarmées comptant jusqu'à 5 divisions (120 000 soldats)." },
+            
+            { name: "EM CTE", org: "CTE", div: "3", location: "Lille", desc: "Le Commandement Terre Europe (CTE) renforce la cohérence et la réactivité des déploiements opérationnels en Europe. Placé sous l'autorité du CPCO, il contrôle opérationnellement les unités françaises déployées sous mandat OTAN ou UE." },
+            
+            { name: "EM Eurocorps", org: "CORPS EUROPEENS", div: "spec", location: "Strasbourg", desc: "Quartier général supérieur du Corps Européen implanté au quartier Aubert de Vincelles. Planifie et conduit des opérations d'entrée en premier comptant jusqu'à 65 000 militaires." },
+            { name: "Bataillon de Soutien", org: "CORPS EUROPEENS", div: "spec", location: "Strasbourg", desc: "Bataillon de soutien multinational de l'Eurocorps et détachements nationaux (FR, DE, BE, ES, PL) stationnés au quartier Lizé." },
+
+            // --- 7e BB ---
+            { name: "7e CCTB", org: "7EME BB", div: "1", location: "Besançon", desc: "Compagnie de commandement et de transmissions blindée assurant le déploiement des PC tactiques." },
+            { name: "1er RCh", org: "7EME BB", div: "1", location: "Thierville-sur-Meuse", desc: "Régiment de chars lourds Leclerc de combat." },
+            { name: "5e RD", org: "7EME BB", div: "1", location: "Mailly-le-Camp", desc: "Régiment interarmes de blindés de haute intensité." },
+            { name: "1er RTir", org: "7EME BB", div: "1", location: "Épinal", desc: "Régiment d'infanterie motorisée équipé de VBCI." },
+            { name: "35e RI", org: "7EME BB", div: "1", location: "Belfort", desc: "Régiment d'infanterie blindée Scorpion hautement mobile." },
+            { name: "152e RI", org: "7EME BB", div: "1", location: "Colmar", desc: "Les 'Diables Rouges', régiment d'infanterie Scorpion de choc." },
+            { name: "68e RAA", org: "7EME BB", div: "1", location: "La Valbonne", desc: "Régiment d'artillerie d'Afrique équipé de canons CAESAR." },
+            { name: "3e RG", org: "7EME BB", div: "1", location: "Charleville-Mézières", desc: "Régiment d'appui au génie combat et mobility blindée." },
+            { name: "CFIM 3e RCA", org: "7EME BB", div: "1", location: "Carpiagne", desc: "Centre de formation initiale des militaires du rang de la brigade." },
+
+            // --- 9e BIMa ---
+            { name: "9e CCTS", org: "9EME BIMA", div: "1", location: "Poitiers", desc: "Compagnie de transmissions et d'appui tactique des troupes de marine." },
+            { name: "RICM", org: "9EME BIMA", div: "1", location: "Poitiers", desc: "Régiment d'Infanterie Chars de Marine. Blindés légers d'attaque EBRC Jaguar." },
+            { name: "1er RIMa", org: "9EME BIMA", div: "1", location: "Angoulême", desc: "Régiment de cavalerie légère blindée des troupes de marine." },
+            { name: "2e RIMa", org: "9EME BIMA", div: "1", location: "Le Mans", desc: "Infanterie de marine spécialisée dans les opérations et assauts amphibies." },
+            { name: "3e RIMa", org: "9EME BIMA", div: "1", location: "Vannes", desc: "Régiment de combat d'infanterie de marine aérotransportable." },
+            { name: "126e RI", org: "9EME BIMA", div: "1", location: "Brive", desc: "Le régiment des 'Bisons', infanterie Scorpion sur Griffon." },
+            { name: "5e RIAOM", org: "9EME BIMA", div: "1", location: "Djibouti", desc: "Forces de souveraineté interarmes et d'intervention permanente en Afrique de l'Est." },
+            { name: "11e RAMa", org: "9EME BIMA", div: "1", location: "Saint-Aubin", desc: "Régiment d'artillerie de marine d'appui feu majeur." },
+            { name: "6e RG", org: "9EME BIMA", div: "1", location: "Angers", desc: "Régiment de génie d'assaut et de franchissement tactique." },
+
+            // --- 27e BIM ---
+            { name: "27e CCTS", org: "27EME BIM", div: "1", location: "Varces", desc: "Appui aux transmissions spécialisées et liaisons numériques de montagne." },
+            { name: "4e RCh", org: "27EME BIM", div: "1", location: "Gap", desc: "Unique régiment de cavalerie blindée légère alpine." },
+            { name: "7e BCA", org: "27EME BIM", div: "1", location: "Varces", desc: "Chasseurs alpins, unité d'infanterie légère d'élite spécialisée verticalité." },
+            { name: "13e BCA", org: "27EME BIM", div: "1", location: "Barby", desc: "Bataillon de combat d'infanterie de montagne blindée." },
+            { name: "27e BCA", org: "27EME BIM", div: "1", location: "Annecy", desc: "Infanterie de montagne, assaut et infiltration en très haute altitude." },
+            { name: "93e RAM", org: "27EME BIM", div: "1", location: "Varces", desc: "Unique régiment d'artillerie de montagne de l'armée de Terre." },
+            { name: "2e REG", org: "27EME BIM", div: "1", location: "Saint-Christol", desc: "Génie d'assaut alpin et déminage de la Légion étrangère." },
+
+            // --- BFA ---
+            { name: "1er RI", org: "BFA", div: "1", location: "Sarrebourg", desc: "Infanterie de ligne moderne hautement tactique." },
+            { name: "3e RH", org: "BFA", div: "1", location: "Metz", desc: "Cavalerie légère blindée de reconnaissance et d'infiltration." },
+            { name: "BCS BFA", org: "BFA", div: "1", location: "Müllheim", desc: "Bataillon de commandement et de soutien logistique franco-allemand." },
+
+            // --- 11e BP ---
+            { name: "11e CCTS", org: "11EME BP", div: "3", location: "Toulouse", desc: "Compagnie de transmissions aéroportées pour le PC de brigade." },
+            { name: "1er RCP", org: "11EME BP", div: "3", location: "Pamiers", desc: "Infanterie aéroportée parachutiste d'assaut et de choc." },
+            { name: "1er RHP", org: "11EME BP", div: "3", location: "Tarbes", desc: "Cavalerie blindée légère aérotransposable d'infiltration." },
+            { name: "1er RTP", org: "11EME BP", div: "3", location: "Cugnaux", desc: "Unique régiment de livraison par air, largage de fret et arrimage." },
+            { name: "2e REP", org: "11EME BP", div: "3", location: "Calvi", desc: "Infanterie aéroportée d'élite et d'assaut d'urgence de la Légion Étrangère." },
+            { name: "17e RGP", org: "11EME BP", div: "3", location: "Montauban", desc: "Génie d'assaut parachutiste, déminage et ouverture d'itinéraires." },
+            { name: "3e RPIMa", org: "11EME BP", div: "3", location: "Carcassonne", desc: "Infanterie de marine parachutiste d'assaut d'urgence." },
+            { name: "8e RPIMa", org: "11EME BP", div: "3", location: "Castres", desc: "Régiment parachutiste d'infanterie de marine d'assaut d'urgence interarmes." },
+            { name: "35e RAP", org: "11EME BP", div: "3", location: "Tarbes", desc: "Appui artillerie parachuté (canons légers et CAESAR)." },
+            // --- 6e BLB ---
+            { name: "6e CCTS", org: "6EME BLB", div: "3", location: "Nîmes", desc: "Appui commandement tactique numérisé et systèmes d'information." },
+            { name: "2e REI", org: "6EME BLB", div: "3", location: "Nîmes", desc: "Le plus grand régiment d'infanterie blindée de la Légion Étrangère." },
+            { name: "1er REC", org: "6EME BLB", div: "3", location: "Carpiagne", desc: "Régiment blindé majeur de cavalerie lourde de la Légion." },
+            { name: "1er REG", org: "6EME BLB", div: "3", location: "Laudun-l'Ardoise", desc: "Génie combat, assaut blindé et contre-minage Légion étrangère." },
+            { name: "1er RS", org: "6EME BLB", div: "3", location: "Valence", desc: "Cavalerie légère blindée de traditions Spahis." },
+            { name: "3e RAMa", org: "6EME BLB", div: "3", location: "Canjuers", desc: "Artillerie de marine d'appui feu majeur interarmes." },
+            { name: "13e DBLE", org: "6EME BLB", div: "3", location: "Camp du Larzac", desc: "Infanterie lourde Légion sur VBCI / Griffon." },
+            { name: "21e RIMa", org: "6EME BLB", div: "3", location: "Fréjus", desc: "Infanterie de marine spécialisée combat amphibie et débarquements." },
+            { name: "CFIM 4e RIMa", org: "6EME BLB", div: "3", location: "Fréjus", desc: "Centre d'instruction initiale des engagés de la 6e BLB." },
+
+            // --- 2e BB ---
+            { name: "2e CCTB", org: "2EME BB", div: "3", location: "Illkirch", desc: "Compagnie de commandement et de transmissions blindée de la 2e BB." },
+            { name: "12e RC", org: "2EME BB", div: "3", location: "Olivet", desc: "Régiment de chars lourds de combat Leclerc." },
+            { name: "501e RCC", org: "2EME BB", div: "3", location: "Mourmelon", desc: "Régiment de chars de combat lourds Leclerc." },
+            { name: "16e BC", org: "2EME BB", div: "3", location: "Bitche", desc: "Bataillon de Chasseurs à pied, infanterie blindée sur VBCI." },
+            { name: "92e RI", org: "2EME BB", div: "3", location: "Clermont-Ferrand", desc: "Régiment d'infanterie blindée Scorpion sur VBCI." },
+            { name: "RMT", org: "2EME BB", div: "3", location: "Meyenheim", desc: "Régiment de Marche du Tchad, infanterie de marine blindée." },
+            { name: "1er RAMa", org: "2EME BB", div: "3", location: "Châlons", desc: "Régiment d'artillerie de marine équipé de canons CAESAR." },
+            { name: "13e RG", org: "2EME BB", div: "3", location: "Valdahon", desc: "Régiment du génie combat, d'appui à la mobilité et contre-mobilité." },
+            { name: "CFIM 2e BB", org: "2EME BB", div: "3", location: "Bitche", desc: "Centre de formation initiale des militaires du rang de la brigade." },
+
+            // --- BART ---
+            { name: "1er RA", org: "BART", div: "spec", location: "Bourogne", desc: "Régiment d'artillerie lourde spécialisé dans les lance-roquettes unitaires (LRU)." },
+            { name: "54e RA", org: "BART", div: "spec", location: "Hyères", desc: "Unique régiment d'artillerie entièrement spécialisé dans la défense sol-air." },
+            { name: "61e RA", org: "BART", div: "spec", location: "Chaumont", desc: "Régiment d'artillerie spécialisé dans la surveillance et les drones tactiques (SDT)." },
+            { name: "EDD", org: "BART", div: "spec", location: "Chaumont-Semoutiers", desc: "École des drones tactiques de l'armée de Terre." },
+
+            // --- 4e BAC ---
+            { name: "4e CCSA", org: "4e BAC", div: "spec", location: "Clermont-Ferrand", desc: "Compagnie de commandement, de transmissions et de soutien d'aérocombat." },
+            { name: "1er RHC", org: "4e BAC", div: "spec", location: "Phalsbourg", desc: "Régiment d'hélicoptères de combat équipés de Gazelle, Puma et Caïman (NH90)." },
+            { name: "3e RHC", org: "4e BAC", div: "spec", location: "Étain", desc: "Régiment d'hélicoptères de reconnaissance, d'appui et d'attaque." },
+            { name: "5e RHC", org: "4e BAC", div: "spec", location: "Pau", desc: "Régiment d'hélicoptères de combat spécialisé appui montagne et Tigre." },
+            { name: "9e RSAM", org: "4e BAC", div: "spec", location: "Montauban", desc: "Régiment de soutien aéromobile, maintenance industrielle des hélicoptères." },
+
+            // --- BRCE ---
+            { name: "2e RH", org: "BRCE", div: "spec", location: "Haguenau", desc: "Régiment de Hussards spécialisé dans la recherche humaine et l'infiltration profonde." },
+            { name: "28e GG", org: "BRCE", div: "spec", location: "Haguenau", desc: "Groupement de géographie militaire, cartographie et données géospatiales tactiques." },
+            { name: "44e RT", org: "BRCE", div: "spec", location: "Mutzig", desc: "Régiment de transmissions spécialisé dans la guerre électronique d'armée." },
+            { name: "54e RT", org: "BRCE", div: "spec", location: "Haguenau", desc: "Régiment tactique de guerre électronique, interception des réseaux et brouillage." },
+            { name: "CIRE", org: "BRCE", div: "spec", location: "Strasbourg", desc: "Centre Interarmées de Recherche et d'Enseignement du renseignement." },
+
+            // --- BGEN ---
+            { name: "2e RD", org: "BGEN", div: "spec", location: "Fontevraud", desc: "Unique régiment de l'armée dédié à la défense Nucléaire, Biologique, Chimique et Radiologique (NRBC)." },
+            { name: "13e RG", org: "BGEN", div: "spec", location: "Valdahon", desc: "Régiment du génie lourd d'appui aux divisions (franchissement et bréchage)." },
+            { name: "19e RG", org: "BGEN", div: "spec", location: "Besançon", desc: "Régiment d'appui au déploiement lourd, chantiers d'infrastructure et travaux publics." },
+            { name: "31e RG", org: "BGEN", div: "spec", location: "Castelsarrasin", desc: "Régiment du génie spécialisé dans l'appui général et le secours d'urgence." },
+
+            // --- BANC ---
+            { name: "Régiment Cyberdéfense", org: "BANC", div: "spec", location: "Saint-Jacques-de-la-Lande", desc: "Unité d'élite de lutte informatique défensive et offensive (LIO/LID). Cyber combat." },
+            { name: "28e RT", org: "BANC", div: "spec", location: "Issoire", desc: "Régiment de transmissions tactiques et infrastructures réseaux." },
+            { name: "40e RT", org: "BANC", div: "spec", location: "Thionville", desc: "Transmissions stratégiques de commandement de théâtre." },
+            { name: "41e RT", org: "BANC", div: "spec", location: "Douai", desc: "Systèmes d'information et d'infrastructure de la Défense." },
+            { name: "48e RT", org: "BANC", div: "spec", location: "Agen", desc: "Régiment d'appui réseaux de combat numérisés." },
+            { name: "53e RT", org: "BANC", div: "spec", location: "Lunéville", desc: "Transmissions électroniques, écoute et guerre électronique." },
+            { name: "CFIM 18e RT", org: "BANC", div: "spec", location: "Dieuze", desc: "Centre de formation de la brigade numérique." },
+
+            // --- BLOG ---
+            { name: "14e RILP", org: "BLOG", div: "spec", location: "Toulouse", desc: "Régiment d'infanterie logistique parachutiste." },
+            { name: "Régiment Médical (RMED)", org: "BLOG", div: "spec", location: "La Valbonne", desc: "Unique régiment médical, déploiement des structures chirurgicales de campagne." },
+            { name: "121e RT", org: "BLOG", div: "spec", location: "Montlhéry", desc: "Régiment du Train, transport lourd logistique routier de combat." },
+            { name: "503e RT", org: "BLOG", div: "spec", location: "Nîmes", desc: "Transport lourd logistique routier, transport de blindés et ravitaillement." },
+            { name: "511e RT", org: "BLOG", div: "spec", location: "Auxonne", desc: "Appui logistique de théâtre et au mouvement des forces." },
+            { name: "515e RT", org: "BLOG", div: "spec", location: "La Braconne", desc: "Ravitaillement munitions, carburant et acheminement blindés." },
+            { name: "516e RT", org: "BLOG", div: "spec", location: "Toul", desc: "Régiment du Train spécialisé dans le porte-blindés lourd." },
+            { name: "519e RT", org: "BLOG", div: "spec", location: "La Rochelle", desc: "Unique unité spécialisée dans le transit maritime militaire et projection portuaire." },
+            { name: "CFIM 135e RT", org: "BLOG", div: "spec", location: "Montlhéry", desc: "Centre de formation logistique du Train." },
+
+            // --- BMAINT ---
+            { name: "2e RMAT", org: "BMAINT", div: "spec", location: "Bruz", desc: "Maintenance de l'électronique de pointe et systèmes de ciblage." },
+            { name: "3e RMAT", org: "BMAINT", div: "spec", location: "Muret", desc: "Maintenance lourde artillerie et parcs de véhicules." },
+            { name: "4e RMAT", org: "BMAINT", div: "spec", location: "Nîmes", desc: "Soutien technique lourd des équipements de la zone Sud-Est." },
+            { name: "6e RMAT", org: "BMAINT", div: "spec", location: "Besançon", desc: "Maintenance régimentaire, soutien direct de la 1re division." },
+            { name: "7e RMAT", org: "BMAINT", div: "spec", location: "Lyon", desc: "Maintenance lourde à forte capacité industrielle." },
+            { name: "8e RMAT", org: "BMAINT", div: "spec", location: "Mourmelon", desc: "Maintenance lourde de l'échelon Scorpion Nord-Est." },
+            { name: "CFIM 1er RMAT", org: "BMAINT", div: "spec", location: "Camp des Garrigues", desc: "Centre de formation de la maintenance industrielle." },
+
+            // --- CAST ---
+            { name: "État-Major CAST", org: "CAST", div: "spec", location: "Pau", desc: "Commandement des Actions Spéciales Terrestres pilote opérationnel des unités d'élite de l'armée de Terre." },
+            { name: "1er RPIMa", org: "CAST", div: "spec", location: "Bayonne", desc: "Régiment de Parachutistes d'Infanterie de Marine, fer de lance des forces spéciales Terre." },
+            { name: "13e RDP", org: "CAST", div: "spec", location: "Martignas", desc: "Régiment de Dragons Parachutistes, spécialisé dans la recherche de renseignements stratégiques en profondeur." },
+            { name: "4e RHFS", org: "CAST", div: "spec", location: "Pau", desc: "Régiment d'Hélicoptères des Forces Spéciales, appui aéromobile exclusif des commandos." },
+
+            // --- COMECIA ---
+            { name: "EM COMECIA", org: "COMECIA", div: "spec", location: "Mourmelon-le-Grand", desc: "Participe à la rédaction d'une doctrine éclairée par l'analyse des nouvelles menaces, étayée des innovations capacitaires et éprouvée au réalisme de l'entraînement." },
+            { name: "CNEC 1er Choc", org: "COMECIA", div: "spec", location: "Mont-Louis", desc: "Le centre national d'entraînement commando est l'héritier des unités de choc de la 2nde guerre mondiale." },
+            { name: "Camp La Courtine", org: "COMECIA", div: "spec", location: "La Courtine", desc: "Le camp de La Courtine est un pôle historique majeur de préparation tactique interarmes." },
+            { name: "1er CP / CENTAC", org: "COMECIA", div: "spec", location: "Mailly-le-Camp", desc: "Le Centre d'entraînement au combat est chargé de la préparation Scorpion des forces." },
+            { name: "CAPCIA-51e RI", org: "COMECIA", div: "spec", location: "Mourmelon", desc: "Le Centre d'appui au combat - 51e RI est établi à Mourmelon-le-Grand et Suippes." },
+            { name: "DEE-LARZAC", org: "COMECIA", div: "spec", location: "La Cavalerie", desc: "Le Détachement d'Espace d'Entraînement du Larzac s'étend sur le plateau de l'Aveyron." },
+            { name: "CECPC", org: "COMECIA", div: "spec", location: "Mailly-le-Camp", desc: "Le Centre d'entraînement et de contrôle des postes de commandement pilote la validation des PC." },
+            { name: "17e GA", org: "COMECIA", div: "spec", location: "Biscarrosse", desc: "Le 17e groupe d'artillerie forme aux techniques de défense sol-air." },
+            { name: "1er RCA", org: "COMECIA", div: "spec", location: "Canjuers", desc: "Le 1er régiment de chasseurs d'Afrique gère la préparation opérationnelle sur le camp de Canjuers." },
+            { name: "CENZUB-94e RI", org: "COMECIA", div: "spec", location: "Sissonne", desc: "Le Centre d'entraînement en zone urbaine - 94e RI offre une scénographie réaliste unique à Sissonne." }
+        ];
+
+        const containers = {
+            "1ER CA": document.getElementById('container-1ca'),
+            "CTE": document.getElementById('container-cte'),
+            "CORPS EUROPEENS": document.getElementById('container-euro'),
+            "7EME BB": document.getElementById('container-7bb'),
+            "9EME BIMA": document.getElementById('container-9bima'),
+            "27EME BIM": document.getElementById('container-27bim'),
+            "BFA": document.getElementById('container-bfa'),
+            "11EME BP": document.getElementById('container-11bp'),
+            "6EME BLB": document.getElementById('container-6blb'),
+            "2EME BB": document.getElementById('container-2bb'),
+            "BRCE": document.getElementById('container-brce'),
+            "4e BAC": document.getElementById('container-4bac'),
+            "BART": document.getElementById('container-bart'),
+            "BGEN": document.getElementById('container-bgen'),
+            "BLOG": document.getElementById('container-blog'),
+            "BMAINT": document.getElementById('container-bmaint'),
+            "BANC": document.getElementById('container-banc'),
+            "CAST": document.getElementById('container-cast'),
+            "COMECIA": document.getElementById('container-comecia')
+        };
+
+        unitsData.forEach((unit, index) => {
+            const container = containers[unit.org];
+            if (container) {
+                const label = document.createElement('div');
+                label.className = 'unit-label';
+                label.setAttribute('data-index', index);
+                label.setAttribute('data-div', unit.div);
+                
+                label.innerHTML = `
+                    <div style="display:flex; align-items:center;">
+                        <span><strong>${unit.name}</strong></span>
+                    </div>
+                    <span class="location-tag">${unit.location}</span>
+                `;
+
+                label.addEventListener('click', () => {
+                    document.querySelectorAll('.unit-label').forEach(el => el.classList.remove('active-blue', 'active-red', 'active-purple'));
+
+                    if (unit.div === "1") label.classList.add('active-blue');
+                    else if (unit.div === "3") label.classList.add('active-red');
+                    else label.classList.add('active-purple');
+
+                    let divText = "Commandement d'Appui Spécialisé";
+                    if(unit.div === "1") divText = "1re DIV (Besançon)";
+                    if(unit.div === "3") divText = "3e DIV (Marseille)";
+
+                    document.getElementById('inspect-name').innerText = unit.name;
+                    document.getElementById('inspect-div').innerText = `Division/Type : ${divText}`;
+                    document.getElementById('inspect-org').innerText = `Brigade : ${unit.org}`;
+                    document.getElementById('inspect-loc').innerText = `Garnison : ${unit.location}`;
+                    document.getElementById('inspect-desc').innerText = unit.desc;
+                    
+                    document.getElementById('inspector-panel').style.display = 'block';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+
+                container.appendChild(label);
+            }
+        });
+
+        function expandSection(section) {
+            section.classList.add('expanded');
+            const content = section.querySelector('.accordion-content');
+            if (content) content.style.maxHeight = content.scrollHeight + "px";
+        }
+
+        function collapseSection(section) {
+            section.classList.remove('expanded');
+            const content = section.querySelector('.accordion-content');
+            if (content) content.style.maxHeight = "0px";
+        }
+
+        document.querySelectorAll('.brigade-title').forEach(titleElement => {
+            titleElement.addEventListener('click', () => {
+                const section = titleElement.parentElement;
+                if (section.classList.contains('expanded')) collapseSection(section);
+                else expandSection(section);
+            });
+        });
+
+        // Replier par défaut toutes les structures au démarrage
+        document.querySelectorAll('.brigade-section').forEach(sec => collapseSection(sec));
+
+        document.getElementById('toggle-all-accordions').addEventListener('click', () => {
+            const allSections = document.querySelectorAll('.brigade-section');
+            const dynamicCheck = Array.from(allSections).some(sec => sec.classList.contains('expanded'));
+            allSections.forEach(sec => dynamicCheck ? collapseSection(sec) : expandSection(sec));
+        });
+
+        const searchBar = document.getElementById('search-bar');
+        const noResultsMsg = document.getElementById('no-results-msg');
+        const mainGrid = document.getElementById('main-grid');
+
+        searchBar.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase().trim();
+            let totalVisible = 0;
+
+            const brigadeVisibility = { "1ER CA": 0, "CTE": 0, "CORPS EUROPEENS": 0, "7EME BB": 0, "9EME BIMA": 0, "27EME BIM": 0, "BFA": 0, "11EME BP": 0, "6EME BLB": 0, "2EME BB": 0, "BRCE": 0, "4e BAC": 0, "BART": 0, "BGEN": 0, "BLOG": 0, "BMAINT": 0, "BANC": 0, "CAST": 0, "COMECIA": 0 };
+            const divVisibility = { "1": 0, "3": 0, "spec": 0 };
+
+            document.querySelectorAll('.unit-label').forEach(label => {
+                const idx = label.getAttribute('data-index');
+                const data = unitsData[idx];
+                const match = data.name.toLowerCase().includes(val) || data.location.toLowerCase().includes(val) || data.desc.toLowerCase().includes(val) || data.org.toLowerCase().includes(val);
+
+                if (match) {
+                    label.style.display = 'flex'; brigadeVisibility[data.org]++; divVisibility[data.div]++; totalVisible++;
+                } else label.style.display = 'none';
+            });
+
+            const sections = {
+                "7EME BB": "sec-7eme-bb", "9EME BIMA": "sec-9eme-bima", "27EME BIM": "sec-27eme-bim", "BFA": "sec-bfa",
+                "11EME BP": "sec-11eme-bp", "6EME BLB": "sec-6eme-blb", "2EME BB": "sec-2eme-bb", "BRCE": "sec-brce", "4e BAC": "sec-4bac", 
+                "BART": "sec-bart", "BGEN": "sec-bgen", "BLOG": "sec-blog", "BMAINT": "sec-bmaint", "BANC": "sec-banc",
+                "CAST": "sec-cast", "COMECIA": "sec-comecia"
+            };
+
+            for (const [org, count] of Object.entries(brigadeVisibility)) {
+                const targetSec = document.getElementById(sections[org]);
+                if (targetSec) {
+                    if (count > 0) {
+                        targetSec.style.display = 'block';
+                        if (val !== "") expandSection(targetSec);
+                    } else {
+                        targetSec.style.display = 'none';
+                        collapseSection(targetSec);
+                    }
+                }
+            }
+
+            // Gestion de l'affichage des blocs fixes supérieurs de Corps d'Armée
+            const totalCorpsVisible = brigadeVisibility["1ER CA"] + brigadeVisibility["CTE"] + brigadeVisibility["CORPS EUROPEENS"];
+            document.getElementById('block-grands-corps').style.display = (totalCorpsVisible > 0 || val === "") ? 'grid' : 'none';
+            document.getElementById('container-1ca').parentElement.style.display = (brigadeVisibility["1ER CA"] > 0 || val === "") ? 'block' : 'none';
+            document.getElementById('container-cte').parentElement.style.display = (brigadeVisibility["CTE"] > 0 || val === "") ? 'block' : 'none';
+            document.getElementById('container-euro').parentElement.style.display = (brigadeVisibility["CORPS EUROPEENS"] > 0 || val === "") ? 'block' : 'none';
+
+            document.getElementById('block-div1').style.display = (divVisibility["1"] > 0) ? 'block' : 'none';
+            document.getElementById('block-div3').style.display = (divVisibility["3"] > 0) ? 'block' : 'none';
+            document.getElementById('block-divspec').style.display = (divVisibility["spec"] > 0) ? 'block' : 'none';
+
+            if (totalVisible === 0) { noResultsMsg.style.display = 'block'; mainGrid.style.display = 'none'; }
+            else { noResultsMsg.style.display = 'none'; mainGrid.style.display = 'grid'; }
+        });
+    </script>
+</body>
+</html>
